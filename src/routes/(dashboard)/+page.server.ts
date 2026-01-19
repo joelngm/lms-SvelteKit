@@ -1,10 +1,12 @@
-export const load = async ({ locals: { pb } }) => {};
+export const load = async ({ locals: { session, user } }) => {
+	return {
+		session,
+		user
+	};
+};
 
 export const actions = {
-	logout: async (event) => {
-		const {
-			locals: { pb }
-		} = event;
-		pb.authStore.clear();
+	logout: async ({ locals: { supabase } }) => {
+		await supabase.auth.signOut();
 	}
 };

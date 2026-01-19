@@ -1,24 +1,34 @@
 import { getCourses } from '$lib/actions/getCourses.js';
-import type { Category } from '$lib/types.js';
-export const load = async ({ locals: { pb, user }, url }) => {
-	const categoryId = url.searchParams.get('categoryId') || '';
-	const userId = user?.id;
-	const title = url.searchParams.get('title') || '';
-	console.log(url.searchParams.get('categoryId'));
-	function getCategories() {
-		const categories = pb.collection('categories').getFullList<Category>({
-			sort: '-created'
-		});
-		return categories;
+import { supabaseAdmin } from '$lib/server/supabase';
+import type { Database } from '$lib/database.types';
+
+type Category = Database['public']['Tables']['categories']['Row'];
+
+export const load = async ({ locals: { user }, url }) => {
+	const categoryId = url.searchParams.get('categoryId') || undefined;
+	const title = url.searchParams.get('title') || undefined;
+
+	const { data: categories, error: categoriesError } = await supabaseAdmin
+		.from('categories')
+		.select('*')
+		.order('created_at', { ascending: false });
+
+	if (categoriesError) {
+		return {
+			categories: [],
+			courses: []
+		};
 	}
-	const [categories, courses] = await Promise.all([
-		getCategories(),
-		getCourses({ categoryId, pb, title, userId })
-	]);
-		console.log('🚀 ~ load ~ courses:', courses);
+
+	const courses = await getCourses({
+		supabase: supabaseAdmin,
+		categoryId,
+		title,
+		userId: user?.id ?? undefined
+	});
 
 	return {
-		categories,
+		categories: categories ?? ([] as Category[]),
 		courses
 	};
 };

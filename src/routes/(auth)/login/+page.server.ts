@@ -2,9 +2,6 @@ import { superValidate } from 'sveltekit-superforms/server';
 import { fail, redirect } from '@sveltejs/kit';
 import { loginSchema } from '$lib/schema';
 
-const VALID_EMAIL = 'lyumugabejoel@gmail.com';
-const VALID_PASSWORD = '20023030';
-
 export const load = async () => {
 	return {
 		form: await superValidate(loginSchema)
@@ -12,7 +9,7 @@ export const load = async () => {
 };
 
 export const actions = {
-	default: async ({ request }) => {
+	default: async ({ request, locals: { supabase } }) => {
 		const form = await superValidate(request, loginSchema);
 
 		if (!form.valid) {
@@ -20,16 +17,15 @@ export const actions = {
 		}
 
 		const { email, password } = form.data;
+		const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-		// ✅ ONLY these credentials are allowed
-		if (email !== VALID_EMAIL || password !== VALID_PASSWORD) {
+		if (error) {
 			return fail(401, {
 				form,
-				message: 'Invalid email or password'
+				message: error.message
 			});
 		}
 
-		// ✅ Successful login
 		throw redirect(303, '/dashboard');
 	}
 };

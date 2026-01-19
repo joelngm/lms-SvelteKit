@@ -1,8 +1,9 @@
 import { titleSchema } from '$lib/schema';
 import { fail, redirect } from '@sveltejs/kit';
-import type { ClientResponseError, RecordModel } from 'pocketbase';
 import { zod } from 'sveltekit-superforms/adapters';
 import { message, superValidate } from 'sveltekit-superforms';
+import { supabaseAdmin } from '$lib/server/supabase';
+import type { Database } from '$lib/database.types';
 
 export const load = async () => {
 	const form = await superValidate(zod(titleSchema));
@@ -15,7 +16,7 @@ export const load = async () => {
 export const actions = {
 	default: async (event) => {
 		const {
-			locals: { pb, user }
+			locals: { user }
 		} = event;
 		// Simulate loading state for 5 seconds
 		// await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -26,17 +27,31 @@ export const actions = {
 				form
 			});
 		}
-		let courseRecord: RecordModel;
-		try {
-			courseRecord = await pb.collection('courses').create({ ...form.data, user: user?.id });
-			// return message(form, 'successfully created course');
-		} catch (e) {
-			const { message: errorMessage } = e as ClientResponseError;
 
-			return message(form, errorMessage, {
+		if (!user?.id) {
+			return fail(401, {
+				form,
+				message: 'You must be logged in to create a course.'
+			});
+		}
+
+		const { data, error } = await supabaseAdmin
+			.from('courses')
+			.insert({
+				user: user.id,
+				title: form.data.title,
+				description: '',
+				isPublished: false
+			})
+			.select()
+			.single<Database['public']['Tables']['courses']['Row']>();
+
+		if (error || !data) {
+			return message(form, error?.message ?? 'Failed to create course', {
 				status: 400
 			});
 		}
-		redirect(303, `/teacher/courses/${courseRecord.id}`);
+
+		redirect(303, `/teacher/courses/${data.id}`);
 	}
 };

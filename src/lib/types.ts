@@ -1,72 +1,16 @@
-import type { AuthModel, RecordModel } from 'pocketbase';
-import type { CourseSchema } from './schema';
+import type { Database } from '$lib/database.types';
 
-// export type Course = RecordModel & CourseSchema & {
-// 	title: string;
-// 	description: string;
-// 	imageUrl: string;
-// 	price: number;
-// 	isPublished: boolean;
-// 	categoryId: string;
-// 	userId: string;
-// 	expand: {
-// 		category: Category;
-// 	};
-// };
-export type Course = RecordModel &
-	CourseSchema & {
-		user: string;
-		expand?: {
-			category: Category;
-			user: AuthModel;
-			'attachments(course)'?: Attachment[];
-			'chapters(course)'?: Chapter[];
-			'purchase(course)'?: Purchase[];
-		};
-	};
-export type Category = RecordModel & {
-	name: string;
-};
-export type Attachment = RecordModel & {
-	name: string;
-	url: File;
-	course: string;
-	expand: {
-		course: Course;
-	};
-};
-export type Chapter = RecordModel & {
-	title: string;
-	description: string;
-	position: number;
-	videoUrl: string;
-	isPublished: boolean;
-	isFree: boolean;
-	course: string;
-	expand?: {
-		'muxData(chapterId)'?: MuxData[];
-	};
-};
-export type MuxData = RecordModel & {
-	assetId: string;
-	playbackId: string;
-	chapterId: boolean;
-};
-export type UserProgress = RecordModel & {
-	user: string;
-	chapter: string;
-	isCompleted: boolean;
-};
-export type Purchase = RecordModel & {
-	user: string;
-	course: string;
-};
+export type Course = Database['public']['Tables']['courses']['Row'];
+export type Category = Database['public']['Tables']['categories']['Row'];
+export type Attachment = Database['public']['Tables']['attachments']['Row'];
+export type Chapter = Database['public']['Tables']['chapters']['Row'];
+export type MuxData = Database['public']['Tables']['muxData']['Row'];
+export type UserProgress = Database['public']['Tables']['userProgress']['Row'];
+export type Purchase = Database['public']['Tables']['purchase']['Row'];
 
-export type Progress = {
-	progress: number | null;
-};
-export type CourseWithProgressWithCategory = Course & {
-	// category: Category | null;
-	// chapters: { id: string }[];
+export type CourseWithMeta = Course & {
+	categoryDetails: Pick<Category, 'id' | 'name'> | null;
+	chapterCount: number;
+	hasPurchase: boolean;
 	progress: number | null;
 };

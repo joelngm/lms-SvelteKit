@@ -10,7 +10,6 @@
 	export let progress: number | null;
 	export let category: string | undefined;
 	export let chapterLength: number | undefined;
-	console.log('🚀 ~ progress:', progress);
 </script>
 
 <a href="/courses/{id}" class="">

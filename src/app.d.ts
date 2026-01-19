@@ -1,15 +1,21 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
-import PocketBase, { type AuthModel } from 'pocketbase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
+import type { Database } from '$lib/database.types';
 
 declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
-			pb: PocketBase;
-			user: AuthModel | undefined;
+			supabase: SupabaseClient<Database>;
+			session: Session | null;
+			user: User | null;
 		}
-		// interface PageData {}
+		interface PageData {
+			session: Session | null;
+			user: User | null;
+		}
 		// interface Platform {}
 	}
 	declare type Item = import('svelte-dnd-action').Item;

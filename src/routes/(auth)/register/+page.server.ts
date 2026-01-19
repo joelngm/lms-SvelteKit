@@ -1,7 +1,7 @@
 import { message, superValidate } from 'sveltekit-superforms';
 import { registerSchema } from '$lib/schema';
 import { fail, redirect } from '@sveltejs/kit';
-import type { ClientResponseError } from 'pocketbase';
+import { supabaseAdmin } from '$lib/server/supabase';
 import { zod } from 'sveltekit-superforms/adapters';
 export const load = async () => {
 	const form = await superValidate(zod(registerSchema));
@@ -16,7 +16,7 @@ export const actions = {
 		// Simulate loading state for 5 seconds
 		// await new Promise((resolve) => setTimeout(resolve, 5000));
 		const {
-			locals: { pb }
+			locals: { supabase }
 		} = event;
 
 		const form = await superValidate(event, zod(registerSchema));
@@ -27,14 +27,38 @@ export const actions = {
 			});
 		}
 
-		try {
-			await pb.collection('users').create(form.data);
-		} catch (e) {
-			const { message: errorMessage } = e as ClientResponseError;
-			return message(form, errorMessage, {
+		const { data, error } = await supabase.auth.signUp({
+			email: form.data.email,
+			password: form.data.password,
+			options: {
+				data: {
+					first_name: form.data.firstName,
+					last_name: form.data.lastName
+				}
+			}
+		});
+
+		if (error) {
+			return message(form, error.message, {
 				status: 400
 			});
 		}
+
+		const userId = data.user?.id;
+		if (userId) {
+			const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+				id: userId,
+				email: form.data.email,
+				firstName: form.data.firstName,
+				lastName: form.data.lastName
+			});
+			if (profileError) {
+				return message(form, profileError.message, {
+					status: 400
+				});
+			}
+		}
+
 		redirect(303, '/login');
 	}
 };

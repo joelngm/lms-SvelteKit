@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { CourseWithProgressWithCategory } from '$lib/types';
+	import type { CourseWithMeta } from '$lib/types';
 	import CourseCard from './CourseCard.svelte';
 
-	export let items: CourseWithProgressWithCategory[];
+	export let items: CourseWithMeta[];
 </script>
 
 <div>
@@ -11,15 +11,15 @@
 			<div class="text-center text-sm text-muted-foreground mt-10">No courses</div>
 		{:else}
 			<div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
-				{#each items as { title, id, imageUrl, price, progress, expand }}
+				{#each items as { title, id, imageUrl, price, progress, categoryDetails, chapterCount }}
 					<CourseCard
 						{id}
 						{title}
-						{imageUrl}
+						imageUrl={imageUrl ?? undefined}
 						{price}
 						{progress}
-						category={expand?.category.name}
-						chapterLength={expand?.['chapters(course)']?.length}
+						category={categoryDetails?.name}
+						chapterLength={chapterCount}
 					/>
 				{/each}
 			</div>

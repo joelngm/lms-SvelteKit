@@ -1,7 +1,6 @@
-export const load = async ({ locals }) => {
-	const { pb, user } = locals;
-
+export const load = async ({ locals: { session, user } }) => {
 	return {
+		session,
 		user
 	};
 };

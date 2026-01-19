@@ -1,37 +1,38 @@
-import type { Chapter } from '$lib/types';
-import PocketBase from 'pocketbase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '$lib/database.types';
 
-export async function getProgress({
-	pb,
-	userId,
-	courseId
-}: {
-	pb: PocketBase;
+type GetProgressParams = {
+	supabase: SupabaseClient<Database>;
 	userId: string;
 	courseId: string;
-}) {
-	try {
-		const publishedChapters = await pb
-			.collection('chapters')
-			.getFullList<Chapter>({
-				filter: `isPublished = ${true} && course = "${courseId}" `,
-				fields: 'id'
-			})
-			.catch(() => []);
-		const publishedChaptersIds = publishedChapters.map((chapter) => chapter.id);
-		console.log('🚀 ~ publishedChaptersIds:', publishedChaptersIds);
-		const validCompletedChapters = await pb
-			.collection('userProgress')
-			.getFullList({
-				filter: `user = "${userId}" && chapters ~ "${publishedChaptersIds}" isCompleted = "${true}"`
-			})
-			.catch(() => []); // Return an empty array if an error occurs
-		console.log('🚀 ~ validCompletedChapters ~ validCompletedChapters:', validCompletedChapters);
-		const progressPercentage = (validCompletedChapters.length / publishedChaptersIds.length) * 100;
-		console.log('🚀 ~ progressPercentage:', progressPercentage);
+};
 
-		return progressPercentage;
-	} catch {
+export async function getProgress({ supabase, userId, courseId }: GetProgressParams) {
+	const { data: publishedChapters, error: publishedError } = await supabase
+		.from('chapters')
+		.select('id')
+		.eq('course', courseId)
+		.eq('isPublished', true);
+
+	if (publishedError || !publishedChapters?.length) {
 		return 0;
 	}
+
+	const chapterIds = publishedChapters.map((chapter) => chapter.id);
+	const { data: completedChapters, error: completedError } = await supabase
+		.from('userProgress')
+		.select('id')
+		.eq('user', userId)
+		.eq('isCompleted', true)
+		.in('chapter', chapterIds);
+
+	if (completedError || !completedChapters) {
+		return 0;
+	}
+
+	if (chapterIds.length === 0) {
+		return 0;
+	}
+
+	return (completedChapters.length / chapterIds.length) * 100;
 }
